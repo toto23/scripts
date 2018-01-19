@@ -29,10 +29,10 @@ class ExtractFileInfos(object):
             else:
                 return False
         except ValueError:
-            return False    
+            return False
         
     def createMapping(self, type_name):
-        with open("output/Elasticsearch.json", "a") as outfile:
+        with open('../output/Elasticsearch.json', "a") as outfile:
             outfile.write(Elasticsearch.Header.replace("TYPE_NAME", type_name))
             for i in range(len(self._fnames)):
                 if self._ftypes[i] == "Date":

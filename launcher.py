@@ -23,7 +23,7 @@ def usage(err):
     print "Error: "+str(err)
     print "Usage: sys.argv[0] -f <file_name> -t <type_name>"
             
-# main
+# tests
 if __name__ == "__main__":
     main()
 

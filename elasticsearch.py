@@ -42,6 +42,8 @@
 #     }
 # }
 
+import urllib, urllib2
+
 class Elasticsearch(object):
     
     # Pour le mapping des donnees
@@ -55,16 +57,21 @@ class Elasticsearch(object):
     Index = ""
     Alias = ""
     
-    # Prevoir methode connexion a ES    
+    # Prevoir methode connexion a ES
     def __init__(self, url):
         self._url = url
-        
-    def sendData(self,fname):
-        ''' to complete '''
-        
+        self._header = {'Content-Type', 'application/json'}
+
+    def sendData(self, data):
+
+#        values = {'name': 'Michael Foord',
+#                  'location': 'Northampton',
+#                  'language': 'Python'}
+
+        data = urllib.urlencode(data)
+        req = urllib2.Request(self._url, data, self._headers)
+        response = urllib2.urlopen(req)
+        the_page = response.read()
+
     def buildBulk(self):
         ''' to complete '''
-    
-    
-    
-    
