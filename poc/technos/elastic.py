@@ -1,4 +1,5 @@
 from elasticsearch import Elasticsearch, helpers
+import csv
 from elasticsearch.connection import RequestsHttpConnection
 
 class Elastic(object):
@@ -24,22 +25,45 @@ class Elastic(object):
 
     @staticmethod
     def getAlias(alias_name):
-        return Elastic.IndexAlias.replace("ALIAS_NAME",alias_name+"View")
+        return Elastic.IndexAlias.replace("ALIAS_NAME",alias_name)
 
     @staticmethod
-    def pushAlias(index_name):
-        data = { "actions": [ { "add": { "index": ""+index_name+"", "alias": ""+Elastic.getAlias()+""} } ] }
-        Elastic.sendRequest("/"+index_name+"/_aliases", data)
+    def getMapping(type, fields_infos):
+        with open("../output/"+str(type)+"_mapping.json", "a") as outfile:
+            outfile.write(Elastic.MapHeader.replace("TYPE_NAME", type))
+            for i, name in enumerate(fields_infos):
+                if fields_infos.get(name) == "Date":
+                    outfile.write(Elastic.MapDateField.replace("FIELD_NAME", name))
+                elif fields_infos.get(name) == "Integer":
+                    outfile.write(Elastic.MapLongField.replace("FIELD_NAME", name))
+                elif fields_infos.get(name) == "Float":
+                    outfile.write(Elastic.MapFloatField.replace("FIELD_NAME", name))
+                elif fields_infos.get(name) == "String":
+                    outfile.write(Elastic.MapStringField.replace("FIELD_NAME", name))
+                if i != len(fields_infos)-1:
+                    outfile.write(",")
+                else:
+                    outfile.write(Elastic.MapFooter)
+        outfile.close()
 
     @staticmethod
-    def pushIndexSettings(index_name):
+    def setIndexSettings(index_name):
         data = Elastic.getIndexSettings()
         Elastic.sendRequest("/"+index_name+"/_settings", data)
 
     @staticmethod
-    def pushData(index_name):
-        data = Elastic.getIndexSettings()
-        Elastic.sendRequest("/test/_bulk", "../output/data.json")
+    def setAlias(index_name, type_name):
+        data = { "actions": [ { "add": { "index": ""+index_name+"", "alias": ""+Elastic.getAlias(type_name+"View")+""} } ] }
+        Elastic.sendRequest("/"+index_name+"/_aliases", data)
+
+    @staticmethod
+    def setMapping(index_name, type_name, fields_infos):
+        data = Elastic.getMapping(type_name, fields_infos)
+        Elastic.sendRequest("/"+index_name+"/_mapping", data)
+
+    @staticmethod
+    def pushData(index_name, data):
+        Elastic.sendRequest("/"+index_name+"/_bulk", data)
 
     @staticmethod
     def sendRequest(url, data):
@@ -69,24 +93,6 @@ class Elastic(object):
         #response = urllib.urlopen(req)
         #the_page = response.read()
 
-    def createDocMapping(type, fields_infos):
-        with open("../output/"+str(type)+"_mapping.json", "a") as outfile:
-            outfile.write(Elastic.MapHeader.replace("TYPE_NAME", type))
-            for i, name in enumerate(fields_infos):
-                if fields_infos.get(name) == "Date":
-                    outfile.write(Elastic.MapDateField.replace("FIELD_NAME", name))
-                elif fields_infos.get(name) == "Integer":
-                    outfile.write(Elastic.MapLongField.replace("FIELD_NAME", name))
-                elif fields_infos.get(name) == "Float":
-                    outfile.write(Elastic.MapFloatField.replace("FIELD_NAME", name))
-                elif fields_infos.get(name) == "String":
-                    outfile.write(Elastic.MapStringField.replace("FIELD_NAME", name))
-                if i != len(fields_infos)-1:
-                    outfile.write(",")
-                else:
-                    outfile.write(Elastic.MapFooter)
-        outfile.close()
-
     # def createDocData(fields_infos, values):
     #     with open("../output/data.json", "a") as outfile:
     #         outfile.write("{ \"doc\": { ")
@@ -109,15 +115,15 @@ class Elastic(object):
                 sb.append("\"" + key + "\": \"" + values[i].rstrip() + "\"")
             if i != len(fields_infos) - 1:
                 sb.append(",")
+            else:
+                sb.append("\n")
         return ''.join(sb)
 
-    def buildBulkBuffer(fields_infos,fname):
+    def buildBuffer(fields_infos,fname):
         sb = []
         with open(fname, encoding="windows-1252") as infile:
             next(infile)
             for line in infile:
-            # filtered = (line.replace('\n', '') for line in infile)
-            # for line in filtered:
                 sb.append(Elastic.createDocData(fields_infos, line.rstrip().split(';')))
         infile.close()
         return ''.join(sb)

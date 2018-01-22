@@ -1,6 +1,8 @@
 import os.path
+import csv
+import json
+import xml.etree.ElementTree as ET
 from dateutil.parser import parse
-from ..technos.elastic import Elastic
 
 class ParseFileInfos(object):
 
@@ -72,6 +74,13 @@ class ParseFileInfos(object):
         return headers
 
     @staticmethod
+    def getHeaders(infile):
+        with open(infile, encoding="windows-1252") as inf:
+            reader = csv.DictReader(infile, delimiter=';')
+        infile.close
+        return reader.fieldnames
+
+    @staticmethod
     def _get_types(headers, infile):
         fields_infos = {}
         # with open(infile, encoding="ISO-8859-1") as inf:
@@ -109,18 +118,44 @@ class ParseFileInfos(object):
                     print("Problem with file format")
                     print("Number of fields("+str(len(line.rstrip().split(';'))) +") differs from number of headers("+len(fields_infos)+"): ")
                     print(" ".join(line.rstrip().split(';')))
+                    return False
+                else:
+                    return True
         infile.close()
 
     @staticmethod
     def _extract_csv_infos(infile):
         try:
-            headers = ParseFileInfos._get_headers(infile)
+            #headers = ParseFileInfos._get_headers(infile)
+            headers = ParseFileInfos.getHeaders(infile)
             return ParseFileInfos._get_types(headers,infile)
         except Exception as e:
             print("Unexpected error: "+str(e))
 
+    @staticmethod
+    def createDocData(fname):
+        with open(fname, encoding="windows-1252") as infile:
+            reader = csv.DictReader(infile, delimiter=';')
+            sb = []
+            sb.append("{ \"doc\": { ")
+
+            fields = reader.fieldnames
+            for row in reader:
+                for f in fields:
+                    if f:
+                        sb.append("\"" + f + "\": \"" + row.get(f).rstrip() + "\"")
+                    if f == fields[-1]:
+                        sb.append(",")
+                    else:
+                        sb.append("\n")
+        infile.close()
+        return ''.join(sb)
+
     def _extractXMLInfos(self, infile):
-        ''' to complete '''
+        tree = ET.parse(infile)
+        root = tree.getroot()
+
+        tree = ET.fromstring(infile)
         
     def _extractJSONInfos(self, infile):
         ''' to complete '''    
