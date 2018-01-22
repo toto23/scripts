@@ -62,7 +62,8 @@ class ParseFileInfos(object):
 
     @staticmethod
     def _get_headers(infile):
-        with open(infile, encoding="ISO-8859-1") as inf:
+        # with open(infile, encoding="ISO-8859-1") as inf:
+        with open(infile, encoding="windows-1252") as inf:
             headers = inf.readline().rstrip().split(';')
             for f in headers:
                 if f.startswith('"') and f.endswith('"'):
@@ -73,7 +74,8 @@ class ParseFileInfos(object):
     @staticmethod
     def _get_types(headers, infile):
         fields_infos = {}
-        with open(infile, encoding="ISO-8859-1") as inf:
+        # with open(infile, encoding="ISO-8859-1") as inf:
+        with open(infile, encoding="windows-1252") as inf:
             values = "".join([next(inf) for x in range(1, 2)]).rstrip().split(';')
             for i in range(len(values)):
                 if values[i].startswith('"') and values[i].endswith('"'):
@@ -99,13 +101,21 @@ class ParseFileInfos(object):
         else:
             print(self._ftext+" format not implemented yet")
 
+    def checkDocStruct(fields_infos, fname):
+        with open(fname, encoding="windows-1252") as infile:
+            next(infile)
+            for line in infile:
+                if len(line.rstrip().split(';')) != len(fields_infos):
+                    print("Problem with file format")
+                    print("Number of fields("+str(len(line.rstrip().split(';'))) +") differs from number of headers("+len(fields_infos)+"): ")
+                    print(" ".join(line.rstrip().split(';')))
+        infile.close()
+
     @staticmethod
     def _extract_csv_infos(infile):
         try:
             headers = ParseFileInfos._get_headers(infile)
-            fields_infos = ParseFileInfos._get_types(headers,infile)
-
-            return fields_infos
+            return ParseFileInfos._get_types(headers,infile)
         except Exception as e:
             print("Unexpected error: "+str(e))
 

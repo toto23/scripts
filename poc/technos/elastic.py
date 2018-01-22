@@ -1,4 +1,5 @@
 from elasticsearch import Elasticsearch, helpers
+from elasticsearch.connection import RequestsHttpConnection
 
 class Elastic(object):
     
@@ -6,44 +7,67 @@ class Elastic(object):
     MapHeader = "{ \"mappings\": { \"TYPE_NAME\": { \"properties\": { "
     MapFooter = " } } } }"
     MapStringField = "\"FIELD_NAME\": { \"type\": \"text\", \"fields\": { \"keyword\": { \"type\": \"keyword\", \"ignore_above\": 256}, \"english\": { \"type\": \"text\", \"analyzer\": \"english\"} } }"
-    #StringField = "\"STRING_FIELD_NAME\": { \"type\": \"text\", \"analyzer\": \"whitespace\" }"
     MapDateField = " \"FIELD_NAME\": { \"type\": \"date\", \"format\": \"strict_date_optional_time||epoch_millis\" }"
     MapLongField = " \"FIELD_NAME\": { \"type\": \"long\" }"
     MapFloatField = " \"FIELD_NAME\": { \"type\": \"float\" }"
     MapDynamicStringField =  " \"match_mapping_type\": \"string\", \"mapping\": { \"type\": \"text\", \"fields\": { \"keyword\": { \"type\": \"keyword\", \"ignore_above\": 256}, \"english\": { \"type\": \"text\", \"analyzer\": \"english\"} } } } }"
 
     # Pour le settings des indices
-    IndexSettings = " \"settings\" : { \"index\" : { \"number_of_shards\" : 3, \"number_of_replicas\" : 2 } } "
+    IndexSettings = " { \"settings\" : { \"index\" : { \"number_of_shards\" : 3, \"number_of_replicas\" : 2 } } "
     IndexAnalysers = ""
-    IndexAlias = "{ \"aliases\" : { \"ALIAS_NAME\": { \"filter\": { \"term\": { \"FIELD\": \"VALUE\"} }, \"routing\": \"VALUE\"} } }"
+    # IndexAlias = "{ \"aliases\" : { \"ALIAS_NAME\": { \"filter\": { \"term\": { \"FIELD\": \"VALUE\"} }, \"routing\": \"VALUE\"} } }"
+    IndexAlias = "{ \"aliases\" : { \"ALIAS_NAME\": { } } }"
 
-    es = None
+    @staticmethod
+    def getIndexSettings():
+        return Elastic.IndexSettings
 
-    # Prevoir methode connexion a ES
-    def __init__(self, url):
-        es = Elasticsearch(url)
+    @staticmethod
+    def getAlias(alias_name):
+        return Elastic.IndexAlias.replace("ALIAS_NAME",alias_name+"View")
 
-        self._header = {'Content-Type', 'application/json'}
+    @staticmethod
+    def pushAlias(index_name):
+        data = { "actions": [ { "add": { "index": ""+index_name+"", "alias": ""+Elastic.getAlias()+""} } ] }
+        Elastic.sendRequest("/"+index_name+"/_aliases", data)
 
-    def sendData(data):
+    @staticmethod
+    def pushIndexSettings(index_name):
+        data = Elastic.getIndexSettings()
+        Elastic.sendRequest("/"+index_name+"/_settings", data)
 
-        values = {'name': 'Michael Foord',
-                  'location': 'Northampton',
-                  'language': 'Python'}
-        helpers.bulk(Elastic.es,data)
+    @staticmethod
+    def pushData(index_name):
+        data = Elastic.getIndexSettings()
+        Elastic.sendRequest("/test/_bulk", "../output/data.json")
+
+    @staticmethod
+    def sendRequest(url, data):
+
+        # self, host = 'localhost', port = 9200, use_ssl = False, url_prefix = '', timeout = 10, ** kwargs
+        # es_conn = RequestsHttpConnection("elastic-test-01.westeurope.cloudapp.azure.com",9200)
+        es_conn = RequestsHttpConnection("52.174.36.247",9200)
+
+        # self, method, url, params = None, body = None, timeout = None, ignore = (), headers = None
+        code, headers, raw_data = es_conn.perform_request("POST", url, None, data, 5, (), None)
+        print("code: "+code+" headers: "+headers+" raw_data: "+raw_data)
+        if code != 200 or code != 201:
+            print("Push data failed")
+
+        # helpers.bulk(Elastic.es,data)
 
         # helpers.bulk(es, k)
         #(2650, [])
+
         # check to make sure we got what we expected...
         #es.count(index='test')
         #{u'count': 2650, u'_shards': {u'successful': 1, u'failed': 0, u'total': 1}}
         #res = es.index(index="test-index", doc_type='tweet', id=1, body=values)
         #print(res['created'])
-
-#        data = urllib.urlencode(data)
-#        req = urllib.Request(self._url, data, self._headers)
-#        response = urllib.urlopen(req)
-#        the_page = response.read()
+        #data = urllib.urlencode(data)
+        #req = urllib.Request(self._url, data, self._headers)
+        #response = urllib.urlopen(req)
+        #the_page = response.read()
 
     def createDocMapping(type, fields_infos):
         with open("../output/"+str(type)+"_mapping.json", "a") as outfile:
@@ -63,44 +87,37 @@ class Elastic(object):
                     outfile.write(Elastic.MapFooter)
         outfile.close()
 
-    def createDocStruct(fields_infos):
-        with open("../output/doc_template.json", "a") as outfile:
-            outfile.write("{ ")
-            for i, key in enumerate(fields_infos):
-                outfile.write("\""+key+"\": \"VALUE"+str(i)+"\"")
-                if i != len(fields_infos)-1:
-                    outfile.write(",")
-            outfile.write(" }")
-        outfile.close()
+    # def createDocData(fields_infos, values):
+    #     with open("../output/data.json", "a") as outfile:
+    #         outfile.write("{ \"doc\": { ")
+    #         for i, key in enumerate(fields_infos):
+    #             if key:
+    #                 # print("\""+key+"\": \""+values[i].rstrip()+"\" => idx: "+str(i)+" for values size: "+str(len(values)))
+    #                 # print(" ".join(values))
+    #                 # print("\""+key+"\": \""+values[i].replace('\r', ''))
+    #                 outfile.write("\""+key+"\": \""+values[i].rstrip()+"\"")
+    #             if i != len(fields_infos)-1:
+    #                 outfile.write(",")
+    #         outfile.write(" } }\n")
+    #     outfile.close()
 
-    def buildBulkBuffer(fname, fields_infos):
-        with open(fname, encoding="ISO-8859-1") as infile:
-            values = "".join([next(infile) for x in range(1, 2)]).rstrip().split(';')
+    def createDocData(fields_infos, values):
+        sb = []
+        sb.append("{ \"doc\": { ")
+        for i, key in enumerate(fields_infos):
+            if key:
+                sb.append("\"" + key + "\": \"" + values[i].rstrip() + "\"")
+            if i != len(fields_infos) - 1:
+                sb.append(",")
+        return ''.join(sb)
 
-
-
-
-        with open("../output/"+str(type)+"_doc_template.json", "a") as outfile:
-            # for line in fname:
-            #     values = "".join([next(outfile) for x in range(1,2)]).rstrip().split(';')
-            #
-            #     outfile.write("{")
-            #     for i in len(fields_infos):
-            #         outfile.write("fields_infos[i]"+":"+"\"values[i]\"")
-            #     outfile.write("}")
-            #
-            # for k in fields_infos.keys():
-            #     outfile.write("\"+k\":"")
-            #
-            # outfile.write("}")
-
-
-
-            fields = ('remote_addr', 'timestamp', 'url', 'status')
-            #values = (remote_addr, timestamp, url, status)
-
-            # We return a dict holding values from each line
-            #es_nginx_d = dict(zip(es_fields_keys, es_fields_vals))
-
-            # Return the row on each iteration
-            #yield idx, es_nginx_d  # <- Note the usage of 'yield'
+    def buildBulkBuffer(fields_infos,fname):
+        sb = []
+        with open(fname, encoding="windows-1252") as infile:
+            next(infile)
+            for line in infile:
+            # filtered = (line.replace('\n', '') for line in infile)
+            # for line in filtered:
+                sb.append(Elastic.createDocData(fields_infos, line.rstrip().split(';')))
+        infile.close()
+        return ''.join(sb)

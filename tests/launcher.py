@@ -1,4 +1,4 @@
-import sys, getopt, csv
+import sys, getopt, os, csv
 from poc.parsing.parseFileInfos import ParseFileInfos
 from poc.technos.elastic import Elastic
 
@@ -71,14 +71,38 @@ if not parser.isvalid():
     print("File "+input_file+" *** not valid ***")
     sys.exit(1)
 else:
-    print("Extracting file information structure...")
-    fields_infos = parser.extract()
+    try:
+        print("Extracting file information structure...")
+        fields_infos = parser.extract()
 
-    print("Creating mapping...")
-    Elastic.createDocMapping(type_name,fields_infos)
+        print("Creating mapping...")
+        Elastic.createDocMapping(type_name,fields_infos)
 
-    print("Creating doc structure...")
-    Elastic.createDocStruct(fields_infos)
+        # print("Creating doc structure...")
+        # Elastic.createDocStruct(fields_infos)
+
+        print("Checking doc structure...")
+        ParseFileInfos.checkDocStruct(fields_infos, input_file)
+
+        index_name, extension = os.path.splitext(os.path.basename(input_file))
+
+        print("Pushing index settings...")
+        Elastic.pushIndexSettings(index_name)
+
+        print("Pushing alias settings...")
+        Elastic.pushAlias(index_name)
+
+        print("Pushing document mapping...")
+        Elastic.pushAlias(index_name)
+
+        print("Creating data bulk...")
+        Elastic.buildBulkBuffer(fields_infos, input_file)
+
+        print("Pushing data...")
+        Elastic.pushData(index_name)
+    except Exception as e:
+        print("An error occured: "+str(e))
+        sys.exit(1)
 
 ## Push mapping + index settings to es
 ## Push data
