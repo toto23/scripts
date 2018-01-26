@@ -38,8 +38,19 @@ else:
         fields_infos = parser.extract()
         index_name, extension = os.path.splitext(os.path.basename(input_file))
 
-        print("Creating mapping...")
-        Elastic.setMapping(index_name, type_name,fields_infos)
+    except Exception as e:
+        print("An error occured: " + str(e))
+        sys.exit(1)
+
+    try:
+        print("Creating template...")
+        # Elastic.setMapping(index_name, type_name,fields_infos)
+
+        Elastic.setTemplate(index_name, type_name,fields_infos)
+        sys.exit(0)
+    except Exception as e:
+        print("An error occured: "+str(e))
+        sys.exit(1)
 
         # print("Creating doc structure...")
         # Elastic.createDocStruct(fields_infos)
@@ -48,26 +59,41 @@ else:
         if not ParseFileInfos.checkDocStruct(fields_infos, input_file):
             print("Checking structure ***KO***")
 
+    try:
         print("Creating data bulk...")
         data = ParseFileInfos.createDocData(input_file)
 
-        print("Pushing index settings...")
-        Elastic.setIndexSettings(index_name)
+    except Exception as e:
+        print("An error occured: " + str(e))
+        sys.exit(1)
 
-        print("Pushing alias settings...")
-        Elastic.setAlias(index_name)
+    # try:
+    #     print("Pushing index settings...")
+    #     Elastic.setIndexSettings(index_name)
+    #
+    # except Exception as e:
+    #     print("An error occured: " + str(e))
+    #     sys.exit(1)
+    #
+    # try:
+    #     print("Pushing alias settings...")
+    #     Elastic.setAlias(index_name)
+    #
+    # except Exception as e:
+    #     print("An error occured: " + str(e))
+    #     sys.exit(1)
 
-        print("Pushing document mapping...")
-        Elastic.setMapping(index_name)
+        # print("Pushing document mapping...")
+        # Elastic.setMapping(index_name)
 
         # print("Creating data bulk...")
         # Elastic.buildBuffer(fields_infos, input_file)
 
+    try:
         print("Pushing data...")
         Elastic.pushData(index_name, data)
-
     except Exception as e:
-        print("An error occured: "+str(e))
+        print("An error occured: " + str(e))
         sys.exit(1)
 
 print("End of job")

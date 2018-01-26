@@ -63,30 +63,25 @@ class ParseFileInfos(object):
         return self._ftext
 
     @staticmethod
-    def _get_headers(infile):
-        # with open(infile, encoding="ISO-8859-1") as inf:
-        with open(infile, encoding="windows-1252") as inf:
-            headers = inf.readline().rstrip().split(';')
-            for f in headers:
-                if f.startswith('"') and f.endswith('"'):
-                    headers.__setitem__(headers.index(f), f[1:-1])
-        inf.close()
-        return headers
-
-    @staticmethod
     def getHeaders(infile):
-        with open(infile, encoding="windows-1252") as inf:
-            reader = csv.DictReader(infile, delimiter=';')
-        infile.close
-        return reader.fieldnames
+        # with open(infile, encoding="windows-1252") as inf:
+        # with open(infile, encoding="ISO-8859-1") as inf:
+        with open(infile) as inf:
+            reader = csv.DictReader(inf, delimiter=';')
+            headers = reader.fieldnames
+        inf.close()
+        return  [ x for x in headers if len(x) > 0 ]
+        # return headers
 
     @staticmethod
     def _get_types(headers, infile):
         fields_infos = {}
         # with open(infile, encoding="ISO-8859-1") as inf:
-        with open(infile, encoding="windows-1252") as inf:
+        with open(infile) as inf:
+        # with open(infile, encoding="windows-1252") as inf:
             values = "".join([next(inf) for x in range(1, 2)]).rstrip().split(';')
-            for i in range(len(values)):
+            for i in range(len(values)-1):
+            # for i in range(len(values)):
                 if values[i].startswith('"') and values[i].endswith('"'):
                     values[i] = values[i][1:-1]
                 if ParseFileInfos.isdate(str(values[i])):
@@ -111,7 +106,9 @@ class ParseFileInfos(object):
             print(self._ftext+" format not implemented yet")
 
     def checkDocStruct(fields_infos, fname):
-        with open(fname, encoding="windows-1252") as infile:
+        # with open(fname, encoding="windows-1252") as infile:
+        # with open(fname, encoding="ISO-8859-1") as infile:
+        with open(fname) as infile:
             next(infile)
             for line in infile:
                 if len(line.rstrip().split(';')) != len(fields_infos):
@@ -126,30 +123,30 @@ class ParseFileInfos(object):
     @staticmethod
     def _extract_csv_infos(infile):
         try:
-            #headers = ParseFileInfos._get_headers(infile)
             headers = ParseFileInfos.getHeaders(infile)
             return ParseFileInfos._get_types(headers,infile)
         except Exception as e:
             print("Unexpected error: "+str(e))
 
-    @staticmethod
-    def createDocData(fname):
-        with open(fname, encoding="windows-1252") as infile:
-            reader = csv.DictReader(infile, delimiter=';')
-            sb = []
-            sb.append("{ \"doc\": { ")
-
-            fields = reader.fieldnames
-            for row in reader:
-                for f in fields:
-                    if f:
-                        sb.append("\"" + f + "\": \"" + row.get(f).rstrip() + "\"")
-                    if f == fields[-1]:
-                        sb.append(",")
-                    else:
-                        sb.append("\n")
-        infile.close()
-        return ''.join(sb)
+    # @staticmethod
+    # def createDocData(fname):
+    #     # with open(fname, encoding="windows-1252") as infile:
+    #     with open(fname, encoding="ISO-8859-1") as infile:
+    #         reader = csv.DictReader(infile, delimiter=';')
+    #         sb = []
+    #         sb.append("{ \"doc\": { ")
+    #
+    #         fields = reader.fieldnames
+    #         for row in reader:
+    #             for f in fields:
+    #                 if f:
+    #                     sb.append("\"" + f + "\": \"" + row.get(f).rstrip() + "\"")
+    #                 if f == fields[-1]:
+    #                     sb.append(",")
+    #                 else:
+    #                     sb.append("\n")
+    #     infile.close()
+    #     return ''.join(sb)
 
     def _extractXMLInfos(self, infile):
         tree = ET.parse(infile)
