@@ -64,15 +64,15 @@ class Elastic(object):
 
     @staticmethod
     def putRequest(url, data):
-        #base_url = "http://elastic02.westeurope.cloudapp.azure.com:9200"
-        base_url = "http://localhost:9200"
+        base_url = "http://elastic02.westeurope.cloudapp.azure.com:9200"
+        # base_url = "http://localhost:9200"
 
         return requests.put(base_url+url, headers={'Content-Type':'application/json;charset=UTF-8"'}, data=data)
 
     @staticmethod
     def postRequest(url, data):
-        #base_url = "http://elastic02.westeurope.cloudapp.azure.com:9200"
-        base_url = "http://localhost:9200"
+        base_url = "http://elastic01.westeurope.cloudapp.azure.com:9200"
+        # base_url = "http://localhost:9200"
 
         return requests.post(base_url+url, headers={'Content-Type':'application/json;charset=UTF-8"'}, data=data)
 
@@ -80,14 +80,16 @@ class Elastic(object):
         sb = []
         for row in data:
             sb.append("{ \"index\" : { } }\n")
-            sb.append("{ \"doc\": { ")
+            # sb.append("{ \"doc\": { ")
+            sb.append("{ ")
             for i, key in enumerate(row):
                 if key:
                     sb.append("\"" + key + "\": \"" + row.get(key) + "\"")
                 if i != len(row) - 1:
                     sb.append(",")
                 else:
-                    sb.append("} }\n")
+                    # sb.append("} }\n")
+                    sb.append("}\n")
         return ''.join(sb)
 
     def buildResponse(response):

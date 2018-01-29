@@ -70,47 +70,45 @@ class FileInfos(object):
 
         return s
 
-    # @staticmethod
-    # def convertToUTF8(filename, out_enc='utf-8'):
-    #     (filepath, name) = os.path.split(filename)
-    #     try:
-    #         f = open(filename, 'rb')
-    #         b = b' '
-    #         b += f.read(1024)
-    #
-    #         u = UniversalDetector()
-    #         u.reset()
-    #         u.feed(b)
-    #         u.close()
-    #
-    #         f.seek(0)
-    #
-    #         b = f.read()
-    #         f.close()
-    #
-    #         in_enc = u.result['encoding']
-    #
-    #         if 'utf-8' != in_enc:
-    #             new_content = b.decode(in_enc, 'ignore')
-    #             f = open(filename, 'w', encoding=out_enc)
-    #             f.write(new_content)
-    #             f.close()
-    #         #print('Success:' + filename + ' converted from ' + in_enc + ' to ' + out_enc)
-    #     except IOError:
-    #         print('Error:' + filename + ' failed to convert from ' + in_enc + ' to ' + out_enc)
-    #     finally:
-    #         f.close()
-    # else:
-    #     return
-
-
     @staticmethod
-    def convertToUTF8(fname):
-        BLOCKSIZE = 1048576 # or some other, desired size in bytes
-        with codecs.open(fname, "r") as sourceFile:
-            with codecs.open("data/file.utf8", "w", "utf-8") as targetFile:
-                while True:
-                    contents = sourceFile.read(BLOCKSIZE)
-                    if not contents:
-                        break
-                    targetFile.write(contents)
+    def convertToUTF8(filename, out_enc='utf-8'):
+        (filepath, name) = os.path.split(filename)
+        try:
+            f = open(filename, 'rb')
+            b = b' '
+            b += f.read(1024)
+
+            u = UniversalDetector()
+            u.reset()
+            u.feed(b)
+            u.close()
+
+            f.seek(0)
+
+            b = f.read()
+            f.close()
+
+            in_enc = u.result['encoding']
+
+            if 'utf-8' != in_enc:
+                new_content = b.decode(in_enc, 'ignore')
+                f = open(filename, 'w', encoding=out_enc)
+                f.write(new_content)
+                f.close()
+            #print('Success:' + filename + ' converted from ' + in_enc + ' to ' + out_enc)
+        except IOError:
+            print('Error:' + filename + ' failed to convert from ' + in_enc + ' to ' + out_enc)
+        finally:
+            f.close()
+
+
+    # @staticmethod
+    # def convertToUTF8(fname):
+    #     BLOCKSIZE = 1048576 # or some other, desired size in bytes
+    #     with codecs.open(fname, "r") as sourceFile:
+    #         with codecs.open("data/file.utf8", "w", "utf-8") as targetFile:
+    #             while True:
+    #                 contents = sourceFile.read(BLOCKSIZE)
+    #                 if not contents:
+    #                     break
+    #                 targetFile.write(contents)

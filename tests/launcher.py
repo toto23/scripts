@@ -40,8 +40,7 @@ if not file_info.isvalid():
 else:
     print("Extracting file information structure...")
     index_name, extension = os.path.splitext(os.path.basename(input_file))
-    file_info.convertToUTF8(input_file)
-    sys.exit(0)
+    # file_info.convertToUTF8(input_file)
 
     parser = None
     try:
@@ -83,6 +82,8 @@ else:
 
         print("Creating data bulk...")
         bulk = ES.buildBuffer(data)
+
+        print(bulk)
 
     except Exception as e:
         print("An error occured: " + str(e))

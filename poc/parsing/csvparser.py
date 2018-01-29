@@ -11,7 +11,8 @@ class CSVParser(FI):
         self.headersTypes = self.__setFieldsTypes__()
 
     def __setHeaders__(self):
-        with open(self.file, encoding="UTF-8") as inf:
+        # with open(self.file, encoding="UTF-8") as inf:
+        with open(self.file) as inf:
             reader = csv.DictReader(inf, delimiter=';')
             headers = reader.fieldnames
         inf.close()
@@ -19,9 +20,10 @@ class CSVParser(FI):
 
     def __setFieldsTypes__(self):
         headersTypes = {}
-        with open(self.file, encoding="UTF-8") as inf:
+        # with open(self.file, encoding="UTF-8") as inf:
+        with open(self.file) as inf:
             values = "".join([next(inf) for x in range(1, 2)]).rstrip().split(';')
-            for i in range(len(values)):
+            for i in range(0,len(values)-1):
                 values[i] = FI.cleanString(values[i])
 
                 if      FI.isdate(str(values[i])):     headersTypes[self.headers[i]] = "Date"
@@ -34,13 +36,19 @@ class CSVParser(FI):
 
     def __setFieldsValues__(self):
         values = []
-        with open(self.file, encoding="UTF-8") as infile:
+        # with open(self.file, encoding="UTF-8") as infile:
+        with open(self.file) as infile:
             next(infile)
             row_data = {}
             for line in infile:
-                for i, key in enumerate(self.headersTypes):
-                    if key: row_data[key] = FI.cleanString(line.split(';')[i])
-                values.append(row_data)
+                # Remove empty line
+                if not len(line.rstrip()) == 0:
+                    # Remove extra ; char at the end of line
+                    if line.rstrip().endswith((';')):
+                        line = line.rstrip()[:-1]
+                    for i, key in enumerate(self.headersTypes):
+                        if key: row_data[key] = FI.cleanString(line.split(';')[i])
+                    values.append(row_data)
             infile.close()
         return values
 
@@ -48,18 +56,24 @@ class CSVParser(FI):
         return self.headersTypes
 
     def checkDocStruct(self):
-        with open(self.file, encoding="UTF-8") as infile:
+        # with open(self.file, encoding="UTF-8") as infile:
+        with open(self.file) as infile:
             next(infile)
             for line in infile:
-                if len(line.rstrip().split(';')) != len(self.headersTypes):
-                    print("Problem with file format with line")
-                    print("Number of fields(" + str(
-                        len(line.rstrip().split(';'))) + ") differs from number of headers(" + str(
-                        len(self.headersTypes)) + "): ")
-                    print(" ".join(line.rstrip().split(';')))
-                    return False
-                else:
-                    return True
+                # Remove empty line
+                if not len(line.rstrip())==0:
+                    # Remove extra ; char at the end of line
+                    if line.rstrip().endswith((';')):
+                        line = line.rstrip()[:-1]
+                    if len(line.rstrip().split(';')) != len(self.headersTypes):
+                        print("Problem with file format with line")
+                        print("Number of fields(" + str(
+                            len(line.rstrip().split(';'))) + ") differs from number of headers(" + str(
+                            len(self.headersTypes)) + "): ")
+                        print(" ".join(line.rstrip().split(';')))
+                        return False
+                    else:
+                        return True
         infile.close()
 
     def extractData(self):
